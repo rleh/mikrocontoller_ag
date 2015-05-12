@@ -1,4 +1,5 @@
 # Mikrocontroller AG
 Meine Aufgaben und Projekte
 
-Geschrieben in C für ```AVR-GCC```
+Geschrieben in C (```AVR-GCC```) für den AtMega16.
+
