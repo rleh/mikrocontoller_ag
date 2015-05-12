@@ -31,6 +31,8 @@ int main() {
 			if(!(PINA & (1<<PA1))){
 				leds |= 0x01; // 0x01 = 0b00000001
 			}
+			// display leds byte
+			PORTC = leds;
 		}
 	}
 	return 0;
