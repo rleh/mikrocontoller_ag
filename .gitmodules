@@ -1,0 +1,3 @@
+[submodule "demo_led_stripe/light_ws2812"]
+	path = demo_led_stripe/light_ws2812
+	url = https://github.com/cpldcpu/light_ws2812.git
