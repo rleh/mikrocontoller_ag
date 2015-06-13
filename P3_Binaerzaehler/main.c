@@ -9,7 +9,7 @@
 #include <avr/iom16.h> // Eclipse makefile does not work :/
 #include <util/delay.h>
 
-#define COUNTER_DELAY 100 // 100 milliseconds
+#define COUNTER_DELAY 500 // 100 milliseconds
 #define COUNTER_RESET_DELAY 10000 // 10 seconds
 
 int main() {

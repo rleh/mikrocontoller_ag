@@ -22,9 +22,9 @@ int main() {
 	while(1) {
 		// is switch at port A pin 0 pressed (active low)
 		if(!(PINA & (1<<PA0))){
-			while(!(PINA & (1<<PA0))){
-				_delay_ms(10);
-			}
+			_delay_ms(10);
+			while(!(PINA & (1<<PA0)));
+			_delay_ms(10);
 			// shift leds byte left
 			leds <<= 1;
 			// if PA1 is pressed, set lowest bit
