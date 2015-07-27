@@ -14,9 +14,18 @@
 void init_adc();
 void init_pwm();
 
+void led_blink_init();
+void led_chaser_init();
+void led_blink_step();
+void led_chaser_step();
+
 volatile uint8_t temp = 0b11110000;
 volatile uint8_t poti;
+uint8_t pwm = 0;
 
+uint8_t led_mode = 2; // invalid value -> led mode is evaluated in while loop
+uint8_t led_chaser_dir = 1; // init value
+uint8_t led_port = 0b00000001; // init value
 
 int main() {
 	init_adc();
@@ -24,13 +33,32 @@ int main() {
 	sei();
 
 	DDRC = 0xFF; // Port C: output
-	PORTC = 0b01010101; // Port C: leds on
+	PORTC = 0x00; // Port C: leds on
 
 	while(1) {
-		//PORTC = ~temp;
-		OCR2 = (uint8_t)( (float)temp * (float)poti / 255.0 );
-		PORTC = ~OCR2;
-		_delay_ms(100);
+		// Calculate PWM
+		pwm = (uint8_t)( (float)temp * (float)poti / 255.0 );
+		// Switch LED mode?
+		if(led_mode != (pwm > 200)) {
+			led_mode = (pwm > 200);
+			if(led_mode) {
+				led_blink_init();
+			}
+			else {
+				led_chaser_init();
+			}
+		}
+		// Do a led animation step
+		if(led_mode) {
+			led_blink_step();
+		}
+		else {
+			led_chaser_step();
+		}
+		// Set PWM
+		OCR2 = pwm;
+		// LED speed depends on temperature
+		_delay_ms(300-OCR2);
 	}
 	return 0;
 }
@@ -81,12 +109,47 @@ ISR(ADC_vect) {
  */
 void init_pwm() {
 	// PD7 output
-	DDRD |= _BV(PD7);
+	DDRD |= (1 << PD7);
 	// Enable Phase Correct PWM
 	TCCR2 = _BV(WGM20);
-	// PB7 HIGH on compare match
-	TCCR2 |= _BV(COM21);
-	// prescaler 1 (nothing to do)
+	// Set OC2=PB7 on compare match whenup-counting. Clear OC2=PB7 on compare match when downcounting
+	TCCR2 |= _BV(COM21) | _BV(COM21);
+	// prescaler 1
+	TCCR2 |= _BV(CS20);
 	// initial compare value
-	OCR2 = 142;
+	OCR2 = 0;
 }
+
+// Led animations:
+void led_blink_init() {
+	// leds off
+	PORTC = 0xFF;
+}
+
+void led_chaser_init() {
+	// empty
+}
+
+void led_blink_step() {
+	// toggle leds
+	PORTC ^= 0xFF;
+}
+
+void led_chaser_step() {
+	if(led_chaser_dir) {
+		led_port <<= 1;
+		if(led_port == 0b10000000) {
+			// toggle led_chaser_dir
+			led_chaser_dir = 0;
+		}
+	}
+	else {
+		led_port >>= 1;
+		if(led_port == 0b00000001) {
+			// toggle led_chaser_dir
+			led_chaser_dir = 1;
+		}
+	}
+	PORTC = ~led_port;
+}
+
