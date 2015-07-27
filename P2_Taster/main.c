@@ -17,6 +17,8 @@ int main() {
 	PORTA |= (1<<PA1);
 	// set port C pin 0 as output (led)
 	DDRC |= ((1<<PC0));
+	DDRA |= ((1<<PA0));
+	//PORTA ^= (1<<PA0);
 	while(1) {
 		// is switch at port A pin 0 pressed (active low)
 		if(!(PINA & (1<<PA1))) {
@@ -25,6 +27,7 @@ int main() {
 			_delay_ms(10);
 			// toggle led at port C pin 0
 			PORTC ^= (1<<PC0);
+			PORTA ^= (1<<PA0);
 		}
 	}
 	return 0;
