@@ -13,6 +13,7 @@
 int main() {
 	// set port A pin 0 and pin 1 as input (switches)
 	DDRA &= ~((1<<PA0)|(1<<PA1));
+	PORTA |= ((1<<PA0)|(1<<PA1));
 	// set port C any pins as output (8 leds)
 	DDRC |= ((1<<PC0)|(1<<PC1)|(1<<PC2)|(1<<PC3)
 			|(1<<PC4)|(1<<PC5)|(1<<PC6)|(1<<PC7));
@@ -32,7 +33,7 @@ int main() {
 				leds |= 0x01; // 0x01 = 0b00000001
 			}
 			// display leds byte
-			PORTC = leds;
+			PORTC = ~leds;
 		}
 	}
 	return 0;
