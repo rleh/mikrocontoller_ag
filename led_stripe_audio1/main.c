@@ -25,6 +25,7 @@ int16_t capture[FFT_N];
 complex_t bfly_buff[FFT_N];
 uint16_t spektrum[FFT_N/2];
 uint16_t pwm_setting[6];
+uint16_t ws2812_setting[6];
 uint8_t counter[6];
 volatile uint8_t peak[6];
 
@@ -34,6 +35,12 @@ const uint16_t pwmtable_10[64]  PROGMEM = { 0, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 
 											61, 68, 76, 85, 94, 105, 117, 131, 146, 162,
 											181, 202, 225, 250, 279, 311, 346, 386, 430,
 											479, 534, 595, 663, 739, 824, 918, 1023 };
+const uint16_t pwmtable_8[64]  PROGMEM = { 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+											2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4,
+											5, 5, 6, 7, 7, 8, 9, 10, 11, 12, 14,
+											15, 17, 19, 21, 24, 26, 29, 33, 37, 41,
+											45, 51, 57, 63, 70, 78, 87, 97, 108,
+											120, 134, 149, 166, 185, 206, 230, 255 };
 
 // LEDs
 volatile struct cRGB led[35];
@@ -91,13 +98,11 @@ void capture_wave(int16_t *buffer, uint16_t count) {
 	ADMUX = _BV(REFS0)|_BV(ADLAR)|_BV(MUX2)|_BV(MUX0);				// channel
 
 	do {
-#if defined (__AVR_ATmega8__)
-		ADCSRA = _BV(ADEN)|_BV(ADSC)|_BV(ADFR)|_BV(ADIF)|_BV(ADPS2)|_BV(ADPS1);
-#error Erste section
-#elif defined (__AVR_ATmega32__) || defined (__AVR_ATmega644__)
-		ADCSRA = _BV(ADEN)|_BV(ADSC)|_BV(ADATE)|_BV(ADIF)|_BV(ADPS2)|_BV(ADPS1);
-#error Zweite section
-#endif
+		#if defined (__AVR_ATmega8__)
+			ADCSRA = _BV(ADEN)|_BV(ADSC)|_BV(ADFR)|_BV(ADIF)|_BV(ADPS2)|_BV(ADPS1);
+		#elif defined (__AVR_ATmega32__) || defined (__AVR_ATmega644__) || defined (__AVR_ATmega16__)
+			ADCSRA = _BV(ADEN)|_BV(ADSC)|_BV(ADATE)|_BV(ADIF)|_BV(ADPS2)|_BV(ADPS1);
+		#endif
 		while(bit_is_clear(ADCSRA, ADIF));
 		*buffer++ = ADC - 32768;
 	} while(--count);
@@ -114,7 +119,7 @@ int main (void) {
 	LED_DIR  |=  (LED1 | LED2 | LED3 | LED4 | LED5 | LED6);
 	LED_PORT &= ~(LED1 | LED2 | LED3 | LED4 | LED5 | LED6);
 
-	TCCR1B = (1 << CS10);											// Timer l�uft mit vollem Systemtakt
+	TCCR1B = (1 << CS10);											// Timer läuft mit vollem Systemtakt
 	TIMSK |= (1 << OCIE1A);											// Interrupt freischalten
 
 	sei();
@@ -125,11 +130,11 @@ int main (void) {
 		fft_execute(bfly_buff);
 		fft_output(bfly_buff, spektrum);
 
-		// Array in ben�tigter Gr��e vor Wiederverwendung 's�ubern'
+		// Array in benötigter Größe vor Wiederverwendung 'säubern'
 		memset(capture, 0, 12);
 
-		// Berechnung der einzelnen B�nder, ohne zun�chst offensichtlichem System,
-		// ergab sich so aus den Unzul�nglichkeiten des AD-Wandlers,
+		// Berechnung der einzelnen Bänder, ohne zunächst offensichtlichem System,
+		// ergab sich so aus den Unzulänglichkeiten des AD-Wandlers,
 		// (hab's versucht, mit rosa Rauschen so in etwa hinzubiegen)
 		for (uint8_t n = 0; n < FFT_N / 2; n++) {
 			s = spektrum[n];
@@ -182,7 +187,13 @@ int main (void) {
 
 			cli();
 			pwm_setting[y] = pgm_read_word(&pwmtable_10[peak[y]]);	// Helligkeitsstufe zuweisen
+			ws2812_setting[y] = pgm_read_word(&pwmtable_8[peak[y]]);	// Helligkeitsstufe zuweisen
 			sei();
+
+			led[y].r = ws2812_setting[y];
+			led[y].g = ws2812_setting[y];
+			led[y].b = ws2812_setting[y];
 		}
+		ws2812_setleds(led, 6);
 	}
 }
